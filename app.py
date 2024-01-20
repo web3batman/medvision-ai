@@ -10,15 +10,28 @@ CLARIFAI_PAT = os.getenv("CLARIFAI_PAT")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
-def generate_image(user_description, api_key):
+# USE GPT-4 TURBO TO UNDERSTAND THE TEXT
+def process_user_input(user_description, api_key):
+    prompt = f"Given the user input: {user_description}, generate a coherent and detailed response describing" \
+             f" relevant medical information, symptoms, or conditions. Ensure that the response is suitable" \
+             f" for generating informative visuals with DALL-E."
+    inference_params = dict(temperature=0.2, max_tokens=100, api_key=api_key)
+    # Model Predict
+    model_prediction = Model("https://clarifai.com/openai/chat-completion/models/gpt-4-turbo")\
+        .predict_by_bytes(prompt.encode(), input_type="text", inference_params=inference_params)
+    return model_prediction.outputs[0].data.text.raw
+
+
+def generate_image(processed_input, api_key):
     prompt = f"You are a professional medical doctor. Based on the below user's description and content," \
-             f" create a proper visualization to enable your patient understand your diagnosis: {user_description}"
+             f" create a proper visualization to enable your patient understand your diagnosis: {processed_input}"
     inference_params = dict(quality="standard", size="1792x1024")
     model_prediction = Model(f"https://clarifai.com/openai/dall-e/models/dall-e-3?api_key={api_key}") \
         .predict_by_bytes(
         prompt.encode(), input_type="text", inference_params=inference_params
     )
     output_base64 = model_prediction.outputs[0].data.image.base64
+    # output = model_prediction.outputs[0].data.image
     with open("generated_image.png", "wb") as file:
         file.write(output_base64)
     return "generated_image.png"
@@ -41,18 +54,6 @@ def understand_image(base64_image, api_key):
     return model_prediction.outputs[0].data.text.raw
 
 
-# from clarifai.client.input import Inputs
-# prompt = "Explain this picture as though you were a medical doctor talking to a patient"
-# image_url = "https://samples.clarifai.com/metro-north.jpg"
-# inference_params = dict(temperature=0.2, max_tokens=100)
-#
-# model_prediction = Model("https://clarifai.com/openai/chat-completion/models/openai-gpt-4-vision")
-# .predict(inputs = [Inputs.get_multimodal_input(input_id="",image_url=image_url, raw_text=prompt)]
-# ,inference_params=inference_params)
-#
-# print(model_prediction.outputs[0].data.text.raw)
-
-
 def text_to_speech(input_text, api_key):
     inference_params = dict(voice='alloy', speed=1.0, api_key=api_key)
     model_prediction = Model(f"https://clarifai.com/openai/tts/models/openai-tts-1") \
@@ -64,35 +65,36 @@ def text_to_speech(input_text, api_key):
 
 
 def main():
-    st.set_page_config(page_title="Interactive Media Creator", layout="wide")
-    st.title("Interactive Media Creator")
+    st.set_page_config(page_title="Interactive Medical Image Generation", layout="wide")
+    st.title("Interactive Medical Image Generation")
 
     with st.sidebar:
         st.header("Controls")
-        image_description = st.text_area("Description for Image Generation", height=100)
+        image_description = st.text_area("WHAT IS THE MEDICAL PROBLEM?", height=100)
         generate_image_btn = st.button("Generate Image")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.header("Comic Art")
+        st.header("Medical Image")
         if generate_image_btn and image_description:
             with st.spinner("Generating image..."):
-                image_path = generate_image(user_description=image_description, api_key=CLARIFAI_PAT)
+                # processed_text = process_user_input(user_description=image_description, api_key=OPENAI_API_KEY)
+                image_path = generate_image(processed_input=image_description, api_key=CLARIFAI_PAT)
                 if image_path:
                     st.image(
                         image_path,
-                        caption="Generated Comic Image",
+                        caption="Generated Medical Image",
                         use_column_width=True,
                     )
                     st.success("Image generated!")
                 else:
-                    st.error("Failed to generate image.")
+                    st.error("Failed to generate image. Try again later")
 
     with col2:
-        st.header("Story")
+        st.header("Image Explanation")
         if generate_image_btn and image_description:
-            with st.spinner("Creating a story..."):
+            with st.spinner("Understanding the image..."):
                 base64_image = encode_image(image_path=image_path)
                 understood_text = understand_image(base64_image=base64_image, api_key=OPENAI_API_KEY)
                 audio_base64 = text_to_speech(input_text=understood_text, api_key=OPENAI_API_KEY)
