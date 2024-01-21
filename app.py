@@ -13,8 +13,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # USE GPT-4 TURBO TO UNDERSTAND THE TEXT
 def process_user_input(user_description, api_key):
     prompt = f"Given the user input: {user_description}, generate a coherent and detailed response describing" \
-             f" relevant medical information, symptoms, or conditions. Ensure that the response is suitable" \
-             f" for generating informative visuals with DALL-E."
+             f" relevant medical information, symptoms, or conditions."
     inference_params = dict(temperature=0.2, max_tokens=100, api_key=api_key)
     # Model Predict
     model_prediction = Model("https://clarifai.com/openai/chat-completion/models/gpt-4-turbo")\
@@ -37,15 +36,11 @@ def generate_image(processed_input, api_key):
     return "generated_image.png"
 
 
-def encode_image(image_path):
+def understand_image(image_path, api_key):
     with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode("utf-8")
+        base64_image = base64.b64encode(image_file.read()).decode("utf-8")
 
-
-def understand_image(base64_image, api_key):
-    prompt = "Analyze the content of this image and write an informative, educative description of the diagnosis" \
-             " given. Describe the tools used, the methods of procedure that would  make the patient to understand" \
-             " the message fully"
+    prompt = "Analyze the content of this image and write an informative, educative description of the image given."
     inference_params = dict(temperature=0.2, image_base64=base64_image, api_key=api_key)
     model_prediction = Model(f"https://clarifai.com/openai/chat-completion/models/gpt-4-vision") \
         .predict_by_bytes(
@@ -79,8 +74,8 @@ def main():
         st.header("Medical Image")
         if generate_image_btn and image_description:
             with st.spinner("Generating image..."):
-                # processed_text = process_user_input(user_description=image_description, api_key=OPENAI_API_KEY)
-                image_path = generate_image(processed_input=image_description, api_key=CLARIFAI_PAT)
+                processed_text = process_user_input(user_description=image_description, api_key=OPENAI_API_KEY)
+                image_path = generate_image(processed_input=processed_text, api_key=CLARIFAI_PAT)
                 if image_path:
                     st.image(
                         image_path,
@@ -95,8 +90,7 @@ def main():
         st.header("Image Explanation")
         if generate_image_btn and image_description:
             with st.spinner("Understanding the image..."):
-                base64_image = encode_image(image_path=image_path)
-                understood_text = understand_image(base64_image=base64_image, api_key=OPENAI_API_KEY)
+                understood_text = understand_image(image_path=image_path, api_key=OPENAI_API_KEY)
                 audio_base64 = text_to_speech(input_text=understood_text, api_key=OPENAI_API_KEY)
                 st.audio(audio_base64, format="audio/mp3")
                 st.success("Audio generated from image understanding!")
