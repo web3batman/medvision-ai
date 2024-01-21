@@ -24,5 +24,6 @@ It focuses on:
 
 ## Developers:
 [Samuel Chukwuemeka Onwuka](http://www.linkedin.com/in/csonwuka) (Data Scientist)
+
 [Ernest Oliver Akubueze](https://www.linkedin.com/in/ernest-akubueze-b53602229/) (Python Software Engineer/ ML/AI Engineer)
 
