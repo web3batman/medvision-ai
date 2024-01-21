@@ -12,8 +12,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # USE GPT-4 TURBO TO UNDERSTAND THE TEXT
 def process_user_input(user_description, api_key):
-    prompt = f"Given the user input: {user_description}, generate a coherent and detailed response describing" \
-             f" relevant medical information, symptoms, or conditions."
+    prompt = f"Given the user input: {user_description}, keep the context, generate a very short and" \
+             f" coherent sentence"
     inference_params = dict(temperature=0.2, max_tokens=100, api_key=api_key)
     # Model Predict
     model_prediction = Model("https://clarifai.com/openai/chat-completion/models/gpt-4-turbo")\
@@ -22,8 +22,8 @@ def process_user_input(user_description, api_key):
 
 
 def generate_image(processed_input, api_key):
-    prompt = f"You are a professional medical doctor. Based on the below user's description and content," \
-             f" create a proper visualization to enable your patient understand your diagnosis: {processed_input}"
+    prompt = f"{processed_input}: You are a professional medical doctor. Based on the above user's description," \
+             f"create a proper visualization keeping the context of the prompt. Make the image realistic"
     inference_params = dict(quality="standard", size="1792x1024")
     model_prediction = Model(f"https://clarifai.com/openai/dall-e/models/dall-e-3?api_key={api_key}") \
         .predict_by_bytes(
@@ -40,7 +40,8 @@ def understand_image(image_path, api_key):
     with open(image_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode("utf-8")
 
-    prompt = "Analyze the content of this image and write an informative, educative description of the image given."
+    prompt = "Analyze the content of this image and give an educative description of the image given" \
+             " while keeping the context."
     inference_params = dict(temperature=0.2, image_base64=base64_image, api_key=api_key)
     model_prediction = Model(f"https://clarifai.com/openai/chat-completion/models/gpt-4-vision") \
         .predict_by_bytes(
